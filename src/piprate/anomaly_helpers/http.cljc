@@ -1,7 +1,7 @@
 (ns piprate.anomaly-helpers.http
   (:require
    [cognitect.anomalies :as anom]
-   [piprate.utils.anomaly-helpers :as ah]))
+   [piprate.anomaly-helpers :as ah]))
 
 (def code-to-cat {400 ::anom/incorrect   ;; Bad Request [RFC7231, Section 6.5.1]
                   401 ::anom/forbidden   ;; Unauthorized [RFC7235, Section 3.1]
