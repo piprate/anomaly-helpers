@@ -94,3 +94,29 @@
 
     (is (= a (ah/a->> a)))
     (is (= a (ah/a->> x inc failing-f dec)))))
+
+
+(deftest to-anomaly-protocol-test
+  (doseq [o [nil {:foo :bar} 0 1 true false [1 2]]]
+    (testing (str "for non anomalous object: " o)
+      (is (not (ah/anomaly? o)))
+      (is (= o (ah/to-anomaly o)))))
+
+  (testing "for ex-info exceptions"
+    (let [ex (ex-info "my test exception" {:foo :bar})]
+      (is (not (ah/anomaly? ex)))
+      (let [a (ah/to-anomaly ex)]
+        (is (ah/anomaly? a))
+        (is (= ::anom/fault (ah/category a)))
+        (is (= "my test exception" (ah/message a)))
+        (is (= ex (::ah/exception a)))))
+
+    #?(:cljs
+       (testing "for js exception"
+         (let [ex (js/Error. "my test exception")]
+           (is (not (ah/anomaly? ex)))
+           (let [a (ah/to-anomaly ex)]
+             (is (ah/anomaly? a))
+             (is (= ::anom/fault (ah/category a)))
+             (is (= "my test exception" (ah/message a)))
+             (is (= ex (::ah/exception a)))))))))

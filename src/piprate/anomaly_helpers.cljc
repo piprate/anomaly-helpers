@@ -9,20 +9,26 @@
 
 (def retryable-categories #{::anom/unavailable ::anom/interrupted ::anom/busy})
 
+(defn with-message [a msg]
+  (if msg
+    (assoc a ::anom/message msg)
+    a))
+
+(defn augment
+  ([m cat]
+   (assoc m ::anom/category cat))
+  ([m cat msg]
+   (-> m
+       (augment cat)
+       (with-message msg))))
+
 (defn anomaly
   ([cat]
    {::anom/category cat})
   ([cat message]
-   {::anom/category cat
-    ::anom/message message})
+   (with-message (anomaly cat) message))
   ([cat message extra-data]
-   (merge
-    extra-data
-    {::anom/category cat
-     ::anom/message message})))
-
-(defn augment [m cat]
-  (assoc m ::anom/category cat))
+   (augment extra-data cat message)))
 
 (defn anomaly? [a]
   (s/valid? ::anom/anomaly a))
@@ -36,8 +42,6 @@
 (defn category [a]
   (::anom/category a))
 
-(defn with-message [a msg]
-  (assoc a ::anom/message msg))
 
 (defmacro alet [bindings & body]
   (if (seq bindings)
@@ -75,3 +79,46 @@
            tmp#
            (a->> (->> tmp# ~first-call) ~@other-calls))))
     value))
+
+
+(defn ex->anomaly [ex]
+  #?(:clj
+     (augment {::exception ex}
+              ::anom/fault
+              (.getMessage ex))
+
+     :cljs
+     (augment {::exception ex}
+              ::anom/fault
+              (.-message ex))))
+
+
+(defprotocol ToAnomaly
+  :extend-via-metadata true
+  (-to-anomaly [o]
+    "Coerces o to an anomaly. If o is not anomalous returns o as is."))
+
+#?(:clj
+   (extend-protocol ToAnomaly
+     Object
+     (-to-anomaly [o] o)
+
+     nil
+     (-to-anomaly [_] nil)
+
+     Throwable
+     (-to-anomaly [ex] (ex->anomaly ex)))
+
+   :cljs
+   (extend-protocol ToAnomaly
+     default
+     (-to-anomaly [o] o)
+
+     js/Error
+     (-to-anomaly [ex] (ex->anomaly ex))))
+
+
+(defn to-anomaly [o]
+  (if (anomaly? o)
+    o
+    (-to-anomaly o)))
