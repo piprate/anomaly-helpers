@@ -55,6 +55,7 @@
 (defn augment-anomalous [response]
   (if-let [status (:status response)]
     (cond
+      (ah/anomaly? (:body response)) (ah/augment response (ah/category (:body response)) (ah/message (:body response)))
       (code-to-cat status) (ah/augment response (code-to-cat status))
       (<= 200 status 299)  response
       (<= 400 status 499)  (ah/augment response ::anom/incorrect)
