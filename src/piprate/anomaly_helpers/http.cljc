@@ -3,7 +3,9 @@
    [cognitect.anomalies :as anom]
    [piprate.anomaly-helpers :as ah]))
 
-(def code-to-cat {400 ::anom/incorrect   ;; Bad Request [RFC7231, Section 6.5.1]
+(def code-to-cat {0   ::anom/unavailable ;; cljs-http sets the status to 0 if there is a connection error
+
+                  400 ::anom/incorrect   ;; Bad Request [RFC7231, Section 6.5.1]
                   401 ::anom/forbidden   ;; Unauthorized [RFC7235, Section 3.1]
                   402 ::anom/forbidden   ;; Payment Required [RFC7231, Section 6.5.2]
                   403 ::anom/forbidden   ;; Forbidden [RFC7231, Section 6.5.3]
